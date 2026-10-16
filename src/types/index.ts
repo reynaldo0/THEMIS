@@ -98,7 +98,12 @@ export interface DoorState {
 
 export interface Announcement {
   type: "REDISTRIBUTION";
+  /** Teks utama (Indonesia) — dipakai panel & sebagai fallback. */
   text: string;
+  /** Teks lengkap bahasa Indonesia. */
+  textId: string;
+  /** Teks lengkap bahasa Inggris (diucapkan setelah versi Indonesia). */
+  textEn: string;
   fromCarId: number;
   toCarId: number;
   priority: "HIGH";

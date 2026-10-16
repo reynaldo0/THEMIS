@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Volume2, VolumeX, Wifi, WifiOff, Home } from "lucide-react";
 import { useThemisStore, useStation, useTrainSummary } from "@/store/useThemisStore";
 import { percent } from "@/lib/format";
-import { FORMATION, TRAIN_ID } from "@/lib/constants";
 import { StatusPill } from "@/components/ui/KpiCard";
 
 interface HeaderProps {
@@ -25,23 +24,13 @@ export function Header({ voiceEnabled, onToggleVoice }: HeaderProps) {
   return (
     <header className="glass z-30 flex h-14 shrink-0 items-center justify-between gap-3 rounded-2xl px-3 sm:h-16 sm:px-4">
       <div className="flex min-w-0 items-center gap-2.5">
-        <a
-          href="#/"
-          title="Kembali ke beranda"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary sm:h-10 sm:w-10"
-        >
-          <img src="/themis-icon.svg" alt="THEMIS" className="h-5 w-5 sm:h-6 sm:w-6" />
+        <a href="#/" title="Kembali ke beranda" className="flex min-w-0 items-center">
+          <img
+            src="/themis-logo.png"
+            alt="THEMIS — Spatial Occupancy Intelligence"
+            className="h-6 w-auto sm:h-8"
+          />
         </a>
-        <div className="min-w-0">
-          <h1 className="truncate font-display text-[15px] font-bold leading-none tracking-tight sm:text-[17px]">
-            <span className="gradient-text">PROJECT THEMIS</span>{" "}
-            <span className="hidden text-muted sm:inline">· 3D Twin</span>
-          </h1>
-          <p className="mt-1 hidden text-[11px] text-faint sm:block">
-            Spatial Occupancy Intelligence · {TRAIN_ID} · Formasi {FORMATION}
-          </p>
-          <p className="mt-1 text-[10px] text-faint sm:hidden">{station.name}</p>
-        </div>
       </div>
 
       <div className="hidden items-center gap-2 lg:flex">

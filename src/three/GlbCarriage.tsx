@@ -7,7 +7,6 @@ import { SHADOW_TEXTURE } from "@/three/shadowTexture";
 import { DENSITY_HEX_INT, DENSITY_LABEL, percent } from "@/lib/format";
 import { WOMEN_CARS } from "@/lib/constants";
 import {
-  MODEL_CENTER_OFFSET_X,
   MODEL_SCALE,
   MODEL_URL_BY_VARIANT,
   variantFor,
@@ -126,9 +125,17 @@ export function GlbCarriage({
 
   return (
     <group ref={outerRef} position={position}>
-      <group ref={popRef} scale={MODEL_SCALE} position={[MODEL_CENTER_OFFSET_X, 0, 0]}>
+      <group
+        ref={popRef}
+        scale={MODEL_SCALE}
+        position={[
+          -template.center.x * MODEL_SCALE,
+          -template.groundY * MODEL_SCALE - 0.012,
+          -template.center.z * MODEL_SCALE,
+        ]}
+      >
         {template.parts.map((part, i) => (
-          <mesh key={i} geometry={part.geometry} material={part.isSkin && skinMat ? skinMat : part.materials} />
+          <mesh key={i} geometry={part.geometry} material={part.isSkin && skinMat ? skinMat : part.material} />
         ))}
         {template.doors.map((d, i) => (
           <mesh

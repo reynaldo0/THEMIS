@@ -18,22 +18,26 @@ export function Scene() {
       onPointerMissed={() => selectCar(null)}
       style={{ background: "transparent" }}
     >
-      <color attach="background" args={["#e9edf7"]} />
-      <fog attach="fog" args={["#e9edf7", 70, 190]} />
+      <color attach="background" args={["#eaeef7"]} />
+      <fog attach="fog" args={["#eaeef7", 78, 200]} />
 
-      <PerspectiveCamera makeDefault position={IS_SMALL ? [26, 17, 46] : [22, 15, 38]} fov={45} />
+      <PerspectiveCamera
+        makeDefault
+        position={IS_SMALL ? [27, 15, 44] : [23, 12.5, 33]}
+        fov={IS_SMALL ? 46 : 42}
+      />
 
       <OrbitControls
         makeDefault
         enableDamping
         dampingFactor={0.06}
-        target={[0, 0.8, 0]}
-        minDistance={12}
-        maxDistance={90}
-        minPolarAngle={0.18}
-        maxPolarAngle={Math.PI / 2 - 0.06}
+        target={[0, 1.05, 0]}
+        minDistance={14}
+        maxDistance={95}
+        minPolarAngle={0.32}
+        maxPolarAngle={Math.PI / 2 - 0.05}
         autoRotate={!IS_SMALL}
-        autoRotateSpeed={0.16}
+        autoRotateSpeed={0.14}
         enablePan={false}
       />
 

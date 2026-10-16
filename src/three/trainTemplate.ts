@@ -5,9 +5,16 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
  * Template statis per varian GLB.
  *
  * Semua mesh penumpang & badan digabung (merge) per material sehingga tiap
- * gerbong hanya butuh ~3 draw call statis + 16 pintu kecil — jauh lebih
- * ringan daripada render ratusan mesh penumpang satu per satu.
- * Hierarki GLB flat (semua node anak root), jadi transform lokal = relatif root.
+ * gerbong hanya butuh beberapa draw call statis + pintu (bila ada) — jauh
+ * lebih ringan daripada render ratusan mesh penumpang satu per satu.
+ *
+ * Catatan penting:
+ * - Hierarki GLB flat (semua node anak root), jadi transform lokal = relatif root.
+ * - Mesh single-material digabung; mesh multi-material (badan) dibiarkan utuh
+ *   karena geometrinya punya groups → material HARUS berupa array. Jika array
+ *   material dikirim ke geometry tanpa groups, three.js tidak merender apa pun.
+ * - Nama material dari Blender bisa bersuffix (mis. "Skin.002"), jadi deteksi
+ *   Skin memakai awalan nama.
  */
 
 export interface DoorInstance {
@@ -20,7 +27,7 @@ export interface DoorInstance {
 
 export interface StaticPart {
   geometry: THREE.BufferGeometry;
-  materials: THREE.Material[];
+  material: THREE.Material | THREE.Material[];
   isSkin: boolean;
 }
 
@@ -28,11 +35,19 @@ export interface TrainTemplate {
   parts: StaticPart[];
   doors: DoorInstance[];
   skinMaterial: THREE.MeshStandardMaterial | null;
+  /** Titik tengah model (unit lokal, sebelum skala) untuk auto-centering. */
+  center: THREE.Vector3;
+  /** Y terendah model (unit lokal) agar alas gerbong pas di lantai. */
+  groundY: number;
 }
 
 const cache = new Map<string, TrainTemplate>();
 
 const DOOR_SLIDE = 0.32;
+
+const isSkinName = (name: string | undefined) => !!name && name.startsWith("Skin");
+const isSkinMaterial = (m: THREE.Material | undefined): m is THREE.MeshStandardMaterial =>
+  !!m && (m as THREE.MeshStandardMaterial).isMeshStandardMaterial && isSkinName(m.name);
 
 export function buildTrainTemplate(root: THREE.Object3D, cacheKey: string): TrainTemplate {
   const hit = cache.get(cacheKey);
@@ -48,6 +63,7 @@ export function buildTrainTemplate(root: THREE.Object3D, cacheKey: string): Trai
 
   root.traverse((obj) => {
     const name = obj.name ?? "";
+    // Bukti peron tidak pernah jadi bagian kereta.
     if (name.startsWith("Peron")) return;
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh) return;
@@ -73,26 +89,22 @@ export function buildTrainTemplate(root: THREE.Object3D, cacheKey: string): Trai
     if (Array.isArray(mesh.material)) {
       const geo = mesh.geometry.clone();
       geo.applyMatrix4(rel);
-      parts.push({ geometry: geo, materials: mesh.material, isSkin: false });
-      // Jika salah satu material di array adalah Skin, catat referensinya.
+      parts.push({ geometry: geo, material: mesh.material, isSkin: false });
       for (const m of mesh.material) {
-        if (m && (m as THREE.MeshStandardMaterial).isMeshStandardMaterial && m.name === "Skin") {
-          skinMaterial = m as THREE.MeshStandardMaterial;
-        }
+        if (isSkinMaterial(m)) skinMaterial = m;
       }
       return;
     }
 
-    if (!mesh.material) return; // lewati mesh tanpa material
+    if (!mesh.material) return;
+
+    if (isSkinMaterial(mesh.material)) skinMaterial = mesh.material;
 
     const geo = mesh.geometry.clone();
     geo.applyMatrix4(rel);
     const bucket = buckets.get(mesh.material);
     if (bucket) bucket.push(geo);
     else buckets.set(mesh.material, [geo]);
-    if ((mesh.material as THREE.MeshStandardMaterial).isMeshStandardMaterial && mesh.material.name === "Skin") {
-      skinMaterial = mesh.material as THREE.MeshStandardMaterial;
-    }
   });
 
   for (const [material, geoms] of buckets) {
@@ -102,14 +114,12 @@ export function buildTrainTemplate(root: THREE.Object3D, cacheKey: string): Trai
       continue;
     }
     if (merged !== geoms[0]) for (const g of geoms) g.dispose();
-    parts.push({ geometry: merged, materials: [material], isSkin: material.name === "Skin" });
+    // material tunggal (bukan array) — geometry hasil merge tidak punya groups.
+    parts.push({ geometry: merged, material, isSkin: isSkinMaterial(material) });
   }
 
   // Arah geser pintu: per sisi (z), bergantian — konsisten dengan export Blender.
-  const sides = [
-    doors.filter((d) => d.position.z >= 0),
-    doors.filter((d) => d.position.z < 0),
-  ];
+  const sides = [doors.filter((d) => d.position.z >= 0), doors.filter((d) => d.position.z < 0)];
   for (const side of sides) {
     side.sort((a, b) => b.position.x - a.position.x);
     side.forEach((d, i) => {
@@ -117,7 +127,16 @@ export function buildTrainTemplate(root: THREE.Object3D, cacheKey: string): Trai
     });
   }
 
-  const template: TrainTemplate = { parts, doors, skinMaterial };
+  // Auto-centering dari bounding box bagian statis (badan + penumpang).
+  const box = new THREE.Box3();
+  for (const p of parts) {
+    p.geometry.computeBoundingBox();
+    if (p.geometry.boundingBox) box.union(p.geometry.boundingBox);
+  }
+  const center = box.isEmpty() ? new THREE.Vector3() : box.getCenter(new THREE.Vector3());
+  const groundY = box.isEmpty() ? 0 : box.min.y;
+
+  const template: TrainTemplate = { parts, doors, skinMaterial, center, groundY };
   cache.set(cacheKey, template);
   return template;
 }

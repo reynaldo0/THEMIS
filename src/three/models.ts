@@ -7,7 +7,7 @@ import { TOTAL_CARS } from "@/lib/constants";
  * pipeline in themis-twin). Each file is ONE carriage with baked passengers:
  *
  *   train-low.glb     ~12 passengers  → GREEN  (Kosong)
- *   train-medium.glb  ~49 passengers  → YELLOW (Sedang)
+ *   train-medium.glb  ~42 passengers  → YELLOW (Sedang)
  *   train-high.glb    ~132 passengers → RED    (Penuh)
  */
 export const MODEL_URLS = {
@@ -33,8 +33,6 @@ export const MODEL_URL_BY_VARIANT: Record<OccupancyVariant, string> = {
 
 /** Blender export is ~22 m per car; scaled to fit the station diorama. */
 export const MODEL_SCALE = 0.24;
-/** Root mesh is slightly off-center in the export (-0.65 model units). */
-export const MODEL_CENTER_OFFSET_X = 0.156;
 
 export const CAR_STRIDE = 5.27 + 0.28;
 export const TRAIN_LENGTH = 10 * CAR_STRIDE - 0.28;

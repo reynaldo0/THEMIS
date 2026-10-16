@@ -34,16 +34,37 @@ export function Dashboard() {
     return () => clearTimeout(id);
   }, []);
 
-  // Voice announcement (opsional, bahasa Indonesia).
+  // Voice announcement: chime kereta, lalu Indonesia, kemudian Inggris.
   useEffect(() => {
     if (!voiceEnabled || !announcement) return;
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     const synth = window.speechSynthesis;
-    const u = new SpeechSynthesisUtterance(announcement.text);
-    u.lang = "id-ID";
-    u.rate = 1.0;
     synth.cancel();
-    synth.speak(u);
+
+    const pickVoice = (prefix: string) =>
+      synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith(prefix)) ?? null;
+
+    const idU = new SpeechSynthesisUtterance(announcement.textId ?? announcement.text);
+    idU.lang = "id-ID";
+    idU.rate = 0.98;
+    const idVoice = pickVoice("id");
+    if (idVoice) idU.voice = idVoice;
+
+    const enU = new SpeechSynthesisUtterance(announcement.textEn ?? announcement.text);
+    enU.lang = "en-US";
+    enU.rate = 0.97;
+    const enVoice = pickVoice("en");
+    if (enVoice) enU.voice = enVoice;
+
+    // Ucapkan versi Inggris setelah versi Indonesia selesai.
+    idU.onend = () => synth.speak(enU);
+
+    playTrainChime();
+    const timer = setTimeout(() => synth.speak(idU), 1500);
+    return () => {
+      clearTimeout(timer);
+      synth.cancel();
+    };
   }, [voiceEnabled, announcement]);
 
   return (
@@ -82,4 +103,31 @@ export function Dashboard() {
       </div>
     </div>
   );
+}
+
+/** Chime dua nada menjelang pengumuman — meniru pengeras suara KRL. */
+function playTrainChime() {
+  if (typeof window === "undefined") return;
+  const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AC) return;
+  try {
+    const ctx = new AC();
+    const now = ctx.currentTime;
+    [587.33, 440].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const start = now + i * 0.42;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.16, start + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.55);
+    });
+    setTimeout(() => ctx.close(), 1600);
+  } catch {
+    /* AudioContext diblokir — abaikan. */
+  }
 }
