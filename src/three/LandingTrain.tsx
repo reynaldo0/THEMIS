@@ -118,7 +118,10 @@ export function LandingTrain() {
         autoRotate
         autoRotateSpeed={0.45}
         enablePan={false}
-        enableZoom={false}
+        enableZoom
+        zoomSpeed={0.7}
+        minDistance={11}
+        maxDistance={23.4}
         minPolarAngle={0.75}
         maxPolarAngle={1.35}
         target={[0, 0.5, 0]}

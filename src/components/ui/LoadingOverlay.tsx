@@ -17,13 +17,8 @@ export function LoadingOverlay() {
 
   return (
     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl bg-[#e9edf7]/95 backdrop-blur">
-      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-secondary shadow-lg">
-        <img src="/themis-icon.svg" alt="" className="h-9 w-9" />
-      </div>
-      <h2 className="font-display text-lg font-bold tracking-tight text-ink">
-        <span className="gradient-text">PROJECT THEMIS</span>
-      </h2>
-      <p className="mt-1 text-[11px] uppercase tracking-[0.3em] text-faint">Memuat Model 3D</p>
+      <img src="/themis-logo.png" alt="PROJECT THEMIS" className="h-9 w-auto sm:h-10" />
+      <p className="mt-5 text-[11px] uppercase tracking-[0.3em] text-faint">Memuat Model 3D</p>
 
       <div className="mt-7 w-64">
         <div className="h-1.5 overflow-hidden rounded-full bg-slate-300/60">
