@@ -166,15 +166,3 @@ function buildRun(
 
   return { keys, total: keys.reduce((s, k) => s + k.dur, 0), start: now };
 }
-
-/** Helper tipe agar `buildRun` tahu bentuk waypoint. */
-function buildWaypointsType(_cam: [number, number, number], _target: [number, number, number]) {
-  return {
-    front: new THREE.Vector3(),
-    frontT: new THREE.Vector3(),
-    back: new THREE.Vector3(),
-    backT: new THREE.Vector3(),
-    def: new THREE.Vector3(),
-    defT: new THREE.Vector3(),
-  };
-}
