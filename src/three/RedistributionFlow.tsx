@@ -14,6 +14,8 @@ const DUR = 1.6;
 const FROM_COLOR = new THREE.Color("#ED242B");
 const TO_COLOR = new THREE.Color("#16A34A");
 
+const IS_SMALL = typeof window !== "undefined" && window.innerWidth < 1024;
+
 /**
  * Visualisasi "Pindah Penumpang": busur beranimasi dari gerbong sumber
  * (Penuh) ke gerbong tujuan (lebih sepi) di atas atap kereta.
@@ -144,10 +146,18 @@ export function RedistributionFlow() {
       </mesh>
 
       {apex && (
-        <Html position={[apex.x, apex.y + 0.3, 0]} center distanceFactor={22} zIndexRange={[25, 0]} style={{ pointerEvents: "none" }}>
-          <div className="whitespace-nowrap rounded-full border border-secondary/30 bg-white/95 px-3 py-1 text-center shadow-sm backdrop-blur">
-            <div className="text-[10.5px] font-bold uppercase tracking-wider text-secondary">Pindah Penumpang</div>
-            <div className="font-mono text-[9.5px] text-slate-600">
+        <Html
+          position={[apex.x, apex.y + 0.3, 0]}
+          center
+          distanceFactor={IS_SMALL ? 14 : 22}
+          zIndexRange={[25, 0]}
+          style={{ pointerEvents: "none" }}
+        >
+          <div className="whitespace-nowrap rounded-full border border-secondary/30 bg-white/95 px-2 py-0.5 text-center shadow-sm backdrop-blur sm:px-3 sm:py-1">
+            <div className="text-[9px] font-bold uppercase tracking-wider text-secondary sm:text-[10.5px]">
+              Pindah<span className="hidden sm:inline"> Penumpang</span>
+            </div>
+            <div className="font-mono text-[8.5px] text-slate-600 sm:text-[9.5px]">
               G{String(from).padStart(2, "0")} → G{String(to).padStart(2, "0")}
             </div>
           </div>

@@ -94,11 +94,19 @@ export function Dashboard() {
               </div>
             )}
             {announcement && (
-              <div className="absolute bottom-3 left-3 right-3 lg:right-auto lg:max-w-md">
+              <div className="absolute bottom-3 left-3 hidden lg:block lg:max-w-md">
                 <AnnouncementBar />
               </div>
             )}
           </div>
+
+          {/* Pengumuman versi mobile: di luar viewport agar objek 3D tidak tertutup. */}
+          {announcement && (
+            <div className="lg:hidden">
+              <AnnouncementBar compact />
+            </div>
+          )}
+
           <CarStrip />
         </main>
 
