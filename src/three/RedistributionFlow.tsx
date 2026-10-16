@@ -5,8 +5,9 @@ import * as THREE from "three";
 import { useThemisStore } from "@/store/useThemisStore";
 import { carX } from "@/three/models";
 
-const ROOF_Y = 1.55;
-const ARC_Y = 3.2;
+const ROOF_Y = 1.12;
+const ARC_Y = 3.0;
+const RING_Y = 1.02;
 const DOTS = 9;
 const DUR = 1.6;
 
@@ -84,14 +85,14 @@ export function RedistributionFlow() {
     // cincin denyut di atap sumber & tujuan
     if (ringFromRef.current) {
       const x1 = carX(from);
-      ringFromRef.current.position.set(x1, 1.42, 0);
+      ringFromRef.current.position.set(x1, RING_Y, 0);
       const s = 1 + ((t * 0.9) % 1) * 0.8;
       ringFromRef.current.scale.setScalar(s);
       (ringFromRef.current.material as THREE.MeshBasicMaterial).opacity = 0.6 * (1 - ((t * 0.9) % 1));
     }
     if (ringToRef.current) {
       const x2 = carX(to);
-      ringToRef.current.position.set(x2, 1.42, 0);
+      ringToRef.current.position.set(x2, RING_Y, 0);
       const s = 1 + (((t * 0.9) + 0.5) % 1) * 0.8;
       ringToRef.current.scale.setScalar(s);
       (ringToRef.current.material as THREE.MeshBasicMaterial).opacity = 0.6 * (1 - (((t * 0.9) + 0.5) % 1));

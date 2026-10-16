@@ -27,24 +27,20 @@ export function generateAnnouncement(
   if (to == null) return null;
 
   const free = Math.round((1 - redistribution.toOccupancy) * 100);
-  const womenId = WOMEN_CARS.has(to)
-    ? " Gerbong tujuan ini juga gerbong khusus wanita."
-    : "";
-  const womenEn = WOMEN_CARS.has(to)
-    ? " Please note the destination carriage is also a women-only carriage."
-    : "";
+  const womenId = WOMEN_CARS.has(to) ? " Gerbong tujuan khusus penumpang wanita." : "";
+  const womenEn = WOMEN_CARS.has(to) ? " This is a women-only carriage." : "";
 
   const textId =
-    `Perhatian, Bapak dan Ibu penumpang. Gerbong ${from} sudah cukup padat ya. ` +
-    `Kalau mau lebih lega, silakan berpindah ke gerbong ${to}, masih ada sekitar ${free} persen ruang kosong di sana.` +
+    `Perhatian, Bapak dan Ibu penumpang. Gerbong ${from} sedang padat. ` +
+    `Silakan beralih ke gerbong ${to}, tersisa sekitar ${free} persen ruang kosong.` +
     womenId +
-    ` Tetap berpegangan dan jaga barang bawaan Anda. Terima kasih.`;
+    ` Terima kasih.`;
 
   const textEn =
-    `Attention, passengers. Carriage ${from} is getting quite crowded. ` +
-    `If you would like more space, please move to carriage ${to}, where about ${free} percent is still free.` +
+    `Attention, passengers. Carriage ${from} is crowded. ` +
+    `Please move to carriage ${to}, about ${free} percent of the space is still free.` +
     womenEn +
-    ` Please hold on and keep an eye on your belongings. Thank you.`;
+    ` Thank you.`;
 
   return {
     type: "REDISTRIBUTION",

@@ -50,6 +50,7 @@ export const CALES_CHEVRON_RUBBER_NOMINAL_MONTHS = 72;
 
 export const PREDICTION_HORIZON_MINUTES = 15;
 
-/** Simulation tick (mirrors `simulate_occupancy_change`). */
-export const SIMULATION_TICK_MS = 4000;
+/** Simulation tick (mirrors `simulate_occupancy_change`).
+ * 20 dtk — cukup jeda agar pengumuman suara selesai sebelum data berikutnya. */
+export const SIMULATION_TICK_MS = 20000;
 export const SIMULATION_JITTER = 0.03;

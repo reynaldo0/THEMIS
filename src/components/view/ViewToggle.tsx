@@ -10,8 +10,8 @@ export function ViewToggle() {
     <div className="pointer-events-auto absolute left-3 top-3 z-20 flex items-center gap-0.5 rounded-full border border-line bg-white/90 p-1 shadow-sm backdrop-blur">
       {(
         [
-          { id: "2d", label: "2D", icon: Layers },
           { id: "3d", label: "3D", icon: Box },
+          { id: "2d", label: "2D", icon: Layers },
         ] as const
       ).map(({ id, label, icon: Icon }) => {
         const active = viewMode === id;

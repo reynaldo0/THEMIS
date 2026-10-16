@@ -153,13 +153,13 @@ export function GlbCarriage({
 
       {/* Bayangan lembut (tanpa shadow map) */}
       <mesh position={[0, 0.006, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={-1}>
-        <planeGeometry args={[6.1, 2.5]} />
+        <planeGeometry args={[6.0, 1.9]} />
         <meshBasicMaterial map={SHADOW_TEXTURE} transparent opacity={0.5} depthWrite={false} />
       </mesh>
 
       {/* Glow density di bahsu kereta */}
       <mesh position={[0, 0.014, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[5.4, 1.9]} />
+        <planeGeometry args={[5.3, 1.5]} />
         <primitive object={glowMat} attach="material" />
       </mesh>
 
@@ -192,7 +192,7 @@ export function GlbCarriage({
       )}
 
       {showLabel && (
-        <Html position={[0, 1.75, 0]} center distanceFactor={24} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
+        <Html position={[0, 1.5, 0]} center distanceFactor={24} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
           <div
             className="whitespace-nowrap rounded-lg border bg-white/90 px-2.5 py-1 text-center font-mono shadow-sm backdrop-blur"
             style={{

@@ -7,6 +7,7 @@ import { TrainDiagram2D } from "@/components/view/TrainDiagram2D";
 import { ViewToggle } from "@/components/view/ViewToggle";
 import { CarStrip } from "@/components/panels/CarStrip";
 import { AnnouncementBar } from "@/components/panels/AnnouncementBar";
+import { CabinCameraPanel } from "@/components/panels/CabinCameraPanel";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { useThemisStore } from "@/store/useThemisStore";
 import { SIMULATION_TICK_MS } from "@/lib/constants";
@@ -20,6 +21,11 @@ export function Dashboard() {
   const isLive = useThemisStore((s) => s.isLive);
   const viewMode = useThemisStore((s) => s.viewMode);
   const announcement = useThemisStore((s) => s.announcement);
+  // Signature stabil: pengumuman hanya diulang saat rekomendasi benar-benar
+  // berubah — supaya suara tidak terpotong/ngulang tiap tick.
+  const announcementKey = useThemisStore((s) =>
+    s.announcement ? `${s.announcement.fromCarId}>${s.announcement.toCarId}:${s.announcement.textId}` : null,
+  );
 
   // Simulasi dummy tick.
   useEffect(() => {
@@ -35,24 +41,29 @@ export function Dashboard() {
   }, []);
 
   // Voice announcement: chime kereta, lalu Indonesia, kemudian Inggris.
+  // Bergantung pada signature (bukan objek yang berubah tiap tick) agar
+  // pembacaan tidak di-cancel di tengah kalimat.
   useEffect(() => {
-    if (!voiceEnabled || !announcement) return;
+    if (!voiceEnabled || !announcementKey) return;
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const current = useThemisStore.getState().announcement;
+    if (!current) return;
+
     const synth = window.speechSynthesis;
     synth.cancel();
 
     const pickVoice = (prefix: string) =>
       synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith(prefix)) ?? null;
 
-    const idU = new SpeechSynthesisUtterance(announcement.textId ?? announcement.text);
+    const idU = new SpeechSynthesisUtterance(current.textId ?? current.text);
     idU.lang = "id-ID";
-    idU.rate = 0.98;
+    idU.rate = 1;
     const idVoice = pickVoice("id");
     if (idVoice) idU.voice = idVoice;
 
-    const enU = new SpeechSynthesisUtterance(announcement.textEn ?? announcement.text);
+    const enU = new SpeechSynthesisUtterance(current.textEn ?? current.text);
     enU.lang = "en-US";
-    enU.rate = 0.97;
+    enU.rate = 0.98;
     const enVoice = pickVoice("en");
     if (enVoice) enU.voice = enVoice;
 
@@ -60,12 +71,12 @@ export function Dashboard() {
     idU.onend = () => synth.speak(enU);
 
     playTrainChime();
-    const timer = setTimeout(() => synth.speak(idU), 1500);
+    const timer = setTimeout(() => synth.speak(idU), 900);
     return () => {
       clearTimeout(timer);
       synth.cancel();
     };
-  }, [voiceEnabled, announcement]);
+  }, [voiceEnabled, announcementKey]);
 
   return (
     <div className="flex min-h-dvh flex-col gap-2.5 p-2.5 lg:h-dvh lg:overflow-hidden">
@@ -84,8 +95,13 @@ export function Dashboard() {
               <TrainDiagram2D />
             )}
             <ViewToggle />
+            {viewMode === "3d" && (
+              <div className="absolute right-3 top-3 z-20">
+                <CabinCameraPanel />
+              </div>
+            )}
             {viewMode === "3d" && !IS_SMALL && (
-              <div className="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-white/70 px-3 py-1.5 text-[10.5px] text-muted backdrop-blur sm:block">
+              <div className="pointer-events-none absolute left-3 top-14 z-10 hidden rounded-full bg-white/70 px-3 py-1.5 text-[10.5px] text-muted backdrop-blur sm:block">
                 seret untuk memutar · scroll untuk zoom
               </div>
             )}
