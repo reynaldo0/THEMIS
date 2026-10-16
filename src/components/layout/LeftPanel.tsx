@@ -106,7 +106,6 @@ export function LeftPanel({ className }: { className?: string }) {
         </ul>
         <div className="mt-3 flex items-center justify-between border-t border-line/80 pt-3">
           <StatusPill label="Simulation Mode" color="#2D2A70" pulse />
-          <span className="text-[10px] text-faint">dummy · siap WS /ws</span>
         </div>
       </Panel>
     </aside>

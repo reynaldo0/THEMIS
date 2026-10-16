@@ -51,6 +51,10 @@ export const CALES_CHEVRON_RUBBER_NOMINAL_MONTHS = 72;
 export const PREDICTION_HORIZON_MINUTES = 15;
 
 /** Simulation tick (mirrors `simulate_occupancy_change`).
- * 20 dtk — cukup jeda agar pengumuman suara selesai sebelum data berikutnya. */
-export const SIMULATION_TICK_MS = 20000;
+ *  4 dtk — cukup renyah agar grafik & indikator terlihat berubah. */
+export const SIMULATION_TICK_MS = 4000;
 export const SIMULATION_JITTER = 0.03;
+
+/** Jeda minimum antar pengumuman suara (agar kalimat tidak terpotong).
+ *  Dipisah dari laju data — data visual boleh cepat, suara tetap tenang. */
+export const ANNOUNCE_MIN_GAP_MS = 18000;

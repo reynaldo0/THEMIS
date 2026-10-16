@@ -135,7 +135,10 @@ export const useThemisStore = create<ThemisState>((set, get) => ({
     const tick = state.tick + 1;
 
     const ratios = state.cars.map((_, i) => {
-      const drift = Math.sin((tick + i * 3) / 6) * 0.015;
+      // Dua gelombang berbeda fase + jitter → okupansi bergerak natural,
+      // tidak monoton, sehingga grafik & indikator terlihat dinamis.
+      const drift =
+        Math.sin((tick + i * 3) / 5) * 0.02 + Math.sin((tick + i * 7) / 11) * 0.015;
       return jitter(base[i] + drift, SIMULATION_JITTER);
     });
 

@@ -8,19 +8,31 @@ interface CarLike {
 }
 
 /**
- * Redistribution engine — mirrors `backend/app/ai/redistribution_engine.py`.
+ * Target redistribusi harus masih punya ruang — di bawah 70%.
+ * Selaras dengan DOOR_TARGET_CAPACITY_MAX di backend.
+ */
+const TARGET_MAX_OCCUPANCY = 0.7;
+
+/**
+ * Redistribution engine — mirror `backend/app/ai/redistribution_engine.py`.
  *
- * Focused mode (currentCarId provided): only when the current car is RED or
- * YELLOW; the first (least occupied) car whose occupancy is at least
- * `REDISTRIBUTION_MIN_DIFF` lower wins. confidence = min(0.95, diff).
+ * Pemilihan gerbong tujuan: BUKAN yang paling lengang secara global, melainkan
+ * gerbong TERDEKAT (selisih nomor gerbong terkecil) yang cukup lebih lengang
+ * (`REDISTRIBUTION_MIN_DIFF`). Ini menghindari rekomendasi memindahkan
+ * penumpang ke ujung rangkaian saat ada gerbong dekat yang memadai.
+ *
+ * Prioritas target:
+ *   1. Gerbong di bawah 70% (masih nyaman).
+ *   2. Bila SELURUH gerbong padat (>70%, "padat banget"), tetap pindah ke
+ *      gerbong relatif paling sepi yang jaraknya paling dekat — agar sistem
+ *      tidak diam saat rangkaian jenuh.
+ * Bila jarak sama, dipilih yang paling sepi.
  */
 export function analyze(
   allCarData: CarLike[],
   currentCarId?: number,
 ): RedistributionResult | null {
   if (!REDISTRIBUTION_ENABLED || allCarData.length === 0) return null;
-
-  const sorted = [...allCarData].sort((a, b) => a.occupancyRatio - b.occupancyRatio);
 
   if (currentCarId != null) {
     const current = allCarData.find((c) => c.carId === currentCarId);
@@ -29,17 +41,35 @@ export function analyze(
       return null;
     }
 
-    const target = sorted.find(
-      (c) =>
-        c.carId !== currentCarId &&
-        current.occupancyRatio - c.occupancyRatio >= REDISTRIBUTION_MIN_DIFF,
-    );
+    const target = pickNearestTarget(allCarData, current);
     if (!target) return null;
 
     return buildRecommendation(current, target);
   }
 
-  return globalAnalysis(sorted);
+  return globalAnalysis(allCarData);
+}
+
+/** Gerbong tujuan terdekat yang cukup lebih lengang (utamakan yang <70%). */
+function pickNearestTarget(cars: CarLike[], source: CarLike): CarLike | null {
+  const emptier = cars.filter(
+    (c) =>
+      c.carId !== source.carId &&
+      source.occupancyRatio - c.occupancyRatio >= REDISTRIBUTION_MIN_DIFF,
+  );
+  if (emptier.length === 0) return null;
+
+  // Tier 1: masih di bawah 70%. Tier 2: padat banget → pakai yang relatif sepi.
+  const comfortable = emptier.filter((c) => c.occupancyRatio < TARGET_MAX_OCCUPANCY);
+  const pool = comfortable.length > 0 ? comfortable : emptier;
+
+  pool.sort((a, b) => {
+    const da = Math.abs(a.carId - source.carId);
+    const db = Math.abs(b.carId - source.carId);
+    if (da !== db) return da - db; // terdekat lebih dulu
+    return a.occupancyRatio - b.occupancyRatio; // lalu paling sepi
+  });
+  return pool[0];
 }
 
 function buildRecommendation(from: CarLike, to: CarLike): RedistributionResult {
@@ -52,29 +82,35 @@ function buildRecommendation(from: CarLike, to: CarLike): RedistributionResult {
     toOccupancy: round4(to.occupancyRatio),
     occupancyDiff: round4(diff),
     confidence: round4(Math.min(0.95, diff)),
-    reason: `Car ${from.carId} (${pct(from.occupancyRatio)}) is more occupied than Car ${to.carId} (${pct(to.occupancyRatio)})`,
+    reason: `Gerbong ${from.carId} (${pct(from.occupancyRatio)}) -> gerbong ${to.carId} (${pct(
+      to.occupancyRatio,
+    )}, terdekat & <70%)`,
   };
 }
 
-function globalAnalysis(sorted: CarLike[]): RedistributionResult | null {
-  if (sorted.length < 2) return null;
-  const least = sorted[0];
-  const most = sorted[sorted.length - 1];
-  const diff = most.occupancyRatio - least.occupancyRatio;
+function globalAnalysis(cars: CarLike[]): RedistributionResult | null {
+  if (cars.length < 2) return null;
 
-  if (diff < REDISTRIBUTION_MIN_DIFF || most.occupancyRatio <= 0.6) return null;
+  const most = [...cars].sort((a, b) => b.occupancyRatio - a.occupancyRatio)[0];
+  if (most.occupancyRatio <= 0.6) return null;
+
+  const target = pickNearestTarget(cars, most);
+  if (!target) return null;
+
+  const diff = most.occupancyRatio - target.occupancyRatio;
+  if (diff < REDISTRIBUTION_MIN_DIFF) return null;
 
   return {
     action: "GLOBAL_REDISTRIBUTION",
     fromCarId: most.carId,
-    toCarId: least.carId,
+    toCarId: target.carId,
     fromOccupancy: round4(most.occupancyRatio),
-    toOccupancy: round4(least.occupancyRatio),
+    toOccupancy: round4(target.occupancyRatio),
     occupancyDiff: round4(diff),
     confidence: round4(Math.min(0.95, diff)),
-    reason: `Significant imbalance detected: Car ${most.carId} (${pct(
+    reason: `Ketimpangan terdeteksi: gerbong ${most.carId} (${pct(
       most.occupancyRatio,
-    )}) vs Car ${least.carId} (${pct(least.occupancyRatio)})`,
+    )}) -> gerbong terdekat ${target.carId} (${pct(target.occupancyRatio)}, <70%)`,
   };
 }
 

@@ -10,8 +10,9 @@ import { AnnouncementBar } from "@/components/panels/AnnouncementBar";
 import { CabinCameraPanel } from "@/components/panels/CabinCameraPanel";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { useThemisStore } from "@/store/useThemisStore";
-import { SIMULATION_TICK_MS } from "@/lib/constants";
+import { SIMULATION_TICK_MS, ANNOUNCE_MIN_GAP_MS } from "@/lib/constants";
 import { prefetchVariants } from "@/three/models";
+import type { Announcement } from "@/types";
 
 const IS_SMALL = typeof window !== "undefined" && window.innerWidth < 1024;
 
@@ -21,11 +22,6 @@ export function Dashboard() {
   const isLive = useThemisStore((s) => s.isLive);
   const viewMode = useThemisStore((s) => s.viewMode);
   const announcement = useThemisStore((s) => s.announcement);
-  // Signature stabil: pengumuman hanya diulang saat rekomendasi benar-benar
-  // berubah — supaya suara tidak terpotong/ngulang tiap tick.
-  const announcementKey = useThemisStore((s) =>
-    s.announcement ? `${s.announcement.fromCarId}>${s.announcement.toCarId}:${s.announcement.textId}` : null,
-  );
 
   // Simulasi dummy tick.
   useEffect(() => {
@@ -40,43 +36,35 @@ export function Dashboard() {
     return () => clearTimeout(id);
   }, []);
 
-  // Voice announcement: chime kereta, lalu Indonesia, kemudian Inggris.
-  // Bergantung pada signature (bukan objek yang berubah tiap tick) agar
-  // pembacaan tidak di-cancel di tengah kalimat.
+  // Voice announcement: dipisah dari laju data. Dicek berkala, tetapi hanya
+  // diucapkan bila isi pengumuman berubah DAN sudah lewat jeda minimum — agar
+  // kalimat tidak terpotong walau grafik & indikator diperbarui lebih cepat.
   useEffect(() => {
-    if (!voiceEnabled || !announcementKey) return;
+    if (!voiceEnabled) return;
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const current = useThemisStore.getState().announcement;
-    if (!current) return;
-
     const synth = window.speechSynthesis;
-    synth.cancel();
+    let lastKey = "";
+    let lastAt = 0;
 
-    const pickVoice = (prefix: string) =>
-      synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith(prefix)) ?? null;
+    const tryAnnounce = () => {
+      const current = useThemisStore.getState().announcement;
+      if (!current) return;
+      const key = `${current.fromCarId}>${current.toCarId}:${current.textId}`;
+      if (key === lastKey) return;
+      const now = Date.now();
+      if (lastAt !== 0 && now - lastAt < ANNOUNCE_MIN_GAP_MS) return;
+      lastKey = key;
+      lastAt = now;
+      speakAnnouncement(synth, current);
+    };
 
-    const idU = new SpeechSynthesisUtterance(current.textId ?? current.text);
-    idU.lang = "id-ID";
-    idU.rate = 1;
-    const idVoice = pickVoice("id");
-    if (idVoice) idU.voice = idVoice;
-
-    const enU = new SpeechSynthesisUtterance(current.textEn ?? current.text);
-    enU.lang = "en-US";
-    enU.rate = 0.98;
-    const enVoice = pickVoice("en");
-    if (enVoice) enU.voice = enVoice;
-
-    // Ucapkan versi Inggris setelah versi Indonesia selesai.
-    idU.onend = () => synth.speak(enU);
-
-    playTrainChime();
-    const timer = setTimeout(() => synth.speak(idU), 900);
+    tryAnnounce();
+    const id = window.setInterval(tryAnnounce, 1500);
     return () => {
-      clearTimeout(timer);
+      window.clearInterval(id);
       synth.cancel();
     };
-  }, [voiceEnabled, announcementKey]);
+  }, [voiceEnabled]);
 
   return (
     <div className="flex min-h-dvh flex-col gap-2.5 p-2.5 lg:h-dvh lg:overflow-hidden">
@@ -119,6 +107,32 @@ export function Dashboard() {
       </div>
     </div>
   );
+}
+
+/** Ucapkan pengumuman dua bahasa: chime, Indonesia, lalu Inggris. */
+function speakAnnouncement(synth: SpeechSynthesis, current: Announcement) {
+  synth.cancel();
+
+  const pickVoice = (prefix: string) =>
+    synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith(prefix)) ?? null;
+
+  const idU = new SpeechSynthesisUtterance(current.textId ?? current.text);
+  idU.lang = "id-ID";
+  idU.rate = 1;
+  const idVoice = pickVoice("id");
+  if (idVoice) idU.voice = idVoice;
+
+  const enU = new SpeechSynthesisUtterance(current.textEn ?? current.text);
+  enU.lang = "en-US";
+  enU.rate = 0.98;
+  const enVoice = pickVoice("en");
+  if (enVoice) enU.voice = enVoice;
+
+  // Ucapkan versi Inggris setelah versi Indonesia selesai.
+  idU.onend = () => synth.speak(enU);
+
+  playTrainChime();
+  window.setTimeout(() => synth.speak(idU), 900);
 }
 
 /** Chime dua nada menjelang pengumuman — meniru pengeras suara KRL. */
